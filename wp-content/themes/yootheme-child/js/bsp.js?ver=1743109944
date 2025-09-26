@@ -1,0 +1,709 @@
+jQuery(document).ready(function($) {
+    var current_width = window.outerWidth;
+    var current_height = $(window).height();
+    var menu_height = 0;
+ 
+    var slider_height = 0;
+    var scrollHeight = 0;
+    var scrollPosition = 0;    
+    
+    var submenu = 0;
+    var endOfDocumentTop = 100;
+    
+    var break_menu_pos = 1024;
+    var break_content_pos = 1200;
+    var button_height = 0;
+    
+    bsp_init();
+
+    //show main slider 
+    $('#main_slider').addClass('loaded');
+
+    //alt to all images that do not have alt 
+    $('img:not([alt])').attr('alt', 'Borgo Santo Pietro');
+    $('.tm-header-mobile .uk-logo img').attr('alt', 'Borgo Santo Pietro');
+    
+    
+    //resize
+    $(window).resize(function() {      
+        setTimeout(function(){
+            bsp_init();
+            calc_drop_item_width();
+        }, 500);
+    });
+
+
+   $('.wk-slideshow ').css('height','400px');
+   
+
+   // press page link override
+    $(document).on('click', '.press .esg-media-cover-wrapper a', function(e) { 
+       e.preventDefault();
+       
+      var post_link = $(this).attr("href");
+      var is_image = checkURL(post_link);
+      
+      if (is_image == false) {
+        if( location.hostname === this.hostname || !this.hostname.length ) {
+          //local
+        } else {
+          //external
+          $(this).attr('rel','nofollow');
+        }
+        
+       window.open(post_link, '_blank');
+
+       }else {
+        UIkit.lightboxPanel({
+           items: [
+           {source: post_link, type: 'image'}
+           ],
+           animation: 'fade',
+        }).show();
+
+      }
+
+    }); 
+    
+    
+
+    //after DOM full load
+    $(window).load(function(){       
+         $('.show-content-after-load').addClass('loaded'); 
+         setTimeout(function(){
+             $('#land_page_nav').addClass('uk-scrollspy-inview uk-animation-slide-bottom');
+             $('.wk-slideshow ').css('height','400px');
+              // fix for widgetkit images lazy load
+              $('.wk-slideshow li').each(function (i) {
+                   // img_src = $(this).find("img").data("lazy-src");
+                    //console.log(img_src);
+                  //  $(this).find(".wk-cover-background").css('background-image', 'url("'+img_src+'")');
+              });
+                
+        }, 500);
+        
+    }); 
+  
+   
+    // book now form 
+    $('#modal_book_form').on({
+      'beforeshow': function(){
+        var menu_height =0;
+     
+        if ($('.tm-header-mobile').height()>0){
+          //mob
+           if($(window).scrollTop() < 60){
+             menu_height = ($('.tm-header-mobile').height() + $('#wpfront-notification-bar').height() + $('#wpadminbar').height())-$(window).scrollTop();
+           } else {
+             menu_height = 0;
+           }
+        } else {
+          
+          //desktop        
+          if($(window).scrollTop() < 140 && $('#wpfront-notification-bar').height()>0 ){
+            menu_height = ($('.uk-navbar-nav').height() + $('#wpfront-notification-bar').height() + $('#wpadminbar').height())-$(window).scrollTop();
+          } else {
+            if($(window).scrollTop() < 100 && $('#wpfront-notification-bar').height()==0 ){
+              menu_height = $('.uk-navbar-nav').height() + $('#wpadminbar').height()-$(window).scrollTop();
+            } else {
+              //sticky menu is shown
+              menu_height = $('.uk-navbar-nav').height();  
+            }  
+          }
+        }
+          
+
+        
+        $('#modal_book_form').css('top', menu_height+'px');
+      },
+      'show': function() {
+           $('.uk-book-button.menu-item').addClass('opened');
+           $('.uk-book-button.menu-item').text(bsp_vars.close_txt); 
+           $('#mobile_bottom_buttons a').eq(0).html('<span class="uk-icon" uk-icon="icon:close;ratio:1.3;"></span>' + bsp_vars.close_txt); 
+      },
+      'hide': function() {
+           $('.uk-book-button.menu-item').removeClass('opened');
+           $('.uk-book-button.menu-item').text(bsp_vars.book_txt);
+           $('#mobile_bottom_buttons a').eq(0).html('<span class="uk-icon" uk-icon="icon:calendar;ratio:1.3;"></span>' + bsp_vars.book_short_txt);           
+      },      
+    });
+    
+    $('#tm-mobile').on({
+      'beforeshow': function(){
+        var menu_height = $('.uk-navbar-nav').height() + $('#wpfront-notification-bar').height() + $('#wpadminbar').height();
+        $(this).css('top', menu_height+'px');
+      },    
+    });
+    
+    
+    $(document).on('click', '.wpfront-close', function() {  
+        var menu_height = $('.uk-navbar-nav').height() + $('#wpadminbar').height();
+        $('#modal_book_form').css('top', menu_height+'px');    
+    });
+
+    /*datepicker*/
+    var lang = document.documentElement.lang;
+    
+    if (lang == 'fr-FR') {
+      $.datepicker.regional['fr'] = {
+        monthNames: ['Janvier','Février','Mars','Avril','Mai','Juin',
+        'Juillet','Août','Septembre','Octobre','Novembre','Décembre'],
+        monthNamesShort: ['Jan','Fév','Mar','Avr','Mai','Jun',
+        'Jul','Aoû','Sep','Oct','Nov','Déc'],
+        dayNames: ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'],
+        dayNamesShort: ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],
+        dayNamesMin: ['Di','Lu','Ma','Me','Je','Ve','Sa']
+      };
+          
+      $.datepicker.setDefaults($.datepicker.regional['fr']);        
+      
+    }
+  
+    if (lang == 'de-DE') {
+      $.datepicker.regional['de'] = {
+        monthNames: ['Januar','Februar','März','April','Mai','Juni',
+        'Juli','August','September','Oktober','November','Dezember'],
+        monthNamesShort: ['Jan','Feb','Mär','Apr','Mai','Jun',
+        'Jul','Aug','Sep','Okt','Nov','Dez'],
+        dayNames: ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'],
+        dayNamesShort: ['So','Mo','Di','Mi','Do','Fr','Sa'],
+        dayNamesMin: ['So','Mo','Di','Mi','Do','Fr','Sa']
+        };
+          
+      $.datepicker.setDefaults($.datepicker.regional['de']);        
+      
+    }
+    
+    if (lang == 'it-IT') {
+      $.datepicker.regional['it'] = {
+        monthNames: ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',   'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'], // set month names
+        monthNamesShort: ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'], // set short month names
+        dayNames: ['Domenica','Luned&#236','Marted&#236','Mercoled&#236','Gioved&#236','Venerd&#236','Sabato'], // set days names
+        dayNamesShort: ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'], // set short day names
+        dayNamesMin: ['Do','Lu','Ma','Me','Gio','Ve','Sa'], // set more short days names
+        };
+          
+      $.datepicker.setDefaults($.datepicker.regional['it']);        
+      
+    }
+
+    if (lang == 'es-ES') {
+      $.datepicker.regional['es'] = {
+        monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+        dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+        dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Juv', 'Vie', 'Sáb'],
+        dayNamesMin: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá']
+        };
+          
+      $.datepicker.setDefaults($.datepicker.regional['es']);        
+      
+    }    
+    
+    if (lang == 'ru-RU') {
+      $.datepicker.regional['ru'] = {
+        monthNames: [ "Январь","Февраль","Март","Апрель","Май","Июнь",
+        "Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь" ],
+        monthNamesShort: [ "Янв","Фев","Мар","Апр","Май","Июн",
+        "Июл","Авг","Сен","Окт","Ноя","Дек" ],
+        dayNames: [ "воскресенье","понедельник","вторник","среда","четверг","пятница","суббота" ],
+        dayNamesShort: [ "вск","пнд","втр","срд","чтв","птн","сбт" ],
+        dayNamesMin: [ "Вс","Пн","Вт","Ср","Чт","Пт","Сб" ],
+        };
+          
+      $.datepicker.setDefaults($.datepicker.regional['ru']);        
+      
+    }    
+       
+    
+    var dateFormat ='dd/mm/yy'
+    
+    if (lang == 'en-US') {
+      dateFormat ='mm/dd/yy'
+    }   
+
+    // initialization 
+   
+    var today = new Date().toDateString();
+    
+    var minDate = new Date("2020-04-02");
+    
+    if (today > minDate){
+      minDate = "+0";
+    }
+   
+    $(".datepicker").datepicker(
+      {
+        dateFormat: dateFormat,
+        minDate: minDate,
+        maxDate: "+2Y",
+        clickInput: true,
+      
+        beforeShowDay: function(date){
+          var val = (new Date("2019-01-01") >= date || new Date("2020-04-02") < date) &&  (new Date("2020-10-31") >= date || new Date("2021-04-02") <= date ) &&  (new Date("2021-10-31") >= date || new Date("2022-04-02") <= date );
+          return [ val ]
+        }        
+      } 
+
+    );    
+    
+    // set animation    
+    $(".datepicker").datepicker(
+    "option", "showAnim", "slide"); 
+    
+    $(document).on('click', '.date-icon', function() {
+      $(this).closest('.form-elem').find('.datepicker').focus();
+      
+    });
+    
+    //single room form
+    $(document).on('click', '#show_book_form', function() {
+      $(this).addClass('uk-hidden');
+      
+    });
+
+    //input numbers 
+    $(document).on('click', '.vc-plus', function() {
+      var input_elem = $(this).closest('.form-elem').find('input');
+      var input_value = input_elem.data("value");
+      var max_cap = input_elem.data("max");
+      var new_value = input_value + 1;
+      input_elem.data('value', new_value);
+      var book_form = $(this).closest('form');
+      
+      if (input_elem.hasClass('adults')){
+        var type='A';  
+        max_cap = input_elem.data("max");
+      }
+      if (input_elem.hasClass('children')){
+        var type='C';  
+        max_cap = input_elem.data("max");
+      }
+      if (input_elem.hasClass('rooms')){
+        var type='R';  
+        
+      }     
+      
+      var type_name = get_person_name(new_value,type);  
+      input_elem.val(new_value + ' ' + type_name);
+      
+     
+      
+
+      if (new_value >  0) {
+        $(this).closest('.form-elem').find('.vc-minus').removeClass('uk-disabled');
+      }  
+      
+      //check max num of persons
+      if (input_elem.hasClass('adults') || input_elem.hasClass('children')){
+        var parent_room = $(this).closest('.per_room');
+        var num_per_room = parent_room.find('input.adults').data("value") + parent_room.find('input.children').data("value");
+        if (num_per_room == max_cap){
+            parent_room.find('.vc-plus').addClass('uk-disabled');
+            parent_room.find('.persons-warning').removeClass('uk-hidden');
+        }
+      }
+      
+      //check max num of rooms      
+      if (input_elem.hasClass('rooms')){
+        set_rooms_display(book_form, new_value);
+        if (new_value == max_cap){
+            $(this).addClass('uk-disabled');
+        }
+      }      
+      
+    });     
+    
+    $(document).on('click', '.vc-minus', function() {      
+      var input_elem = $(this).closest('.form-elem').find('input');
+      var input_value = input_elem.data("value");
+      var max_cap = input_elem.data("max");
+      var new_value = input_value -1;
+      //what form      
+      var book_form = $(this).closest('form');
+      
+      if (new_value == 0 && input_elem.hasClass('children')) {
+         $(this).addClass('uk-disabled');
+      }
+      if (new_value == 1 && (input_elem.hasClass('adults') || input_elem.hasClass('rooms'))) {
+         $(this).addClass('uk-disabled');
+      }    
+      
+      input_elem.data('value', new_value);
+      
+      if (input_elem.hasClass('adults')){
+        var type='A'; 
+        max_cap = input_elem.data("max") ;        
+      }
+      if (input_elem.hasClass('children')){
+        var type='C';  
+        max_cap = input_elem.data("max") ;
+      }
+      if (input_elem.hasClass('rooms')){
+        var type='R';  
+      }   
+      
+     var type_name = get_person_name(new_value,type);  
+     input_elem.val(new_value + ' ' + type_name);
+ 
+     //check max num of persons
+     if (input_elem.hasClass('adults') || input_elem.hasClass('children')){
+        var parent_room = $(this).closest('.per_room');
+        var num_per_room = parent_room.find('input.adults').data("value") + parent_room.find('input.children').data("value");
+        if (num_per_room < max_cap){
+            parent_room.find('.vc-plus').removeClass('uk-disabled');
+            parent_room.find('.persons-warning').addClass('uk-hidden');
+        }     
+     }
+
+    if (input_elem.hasClass('rooms')){
+       set_rooms_display(book_form, new_value);
+      if (new_value < max_cap){
+         $(this).closest('.form-elem').find('.vc-plus').removeClass('uk-disabled');
+      }
+    }      
+      
+    });        
+    
+    //enable check rates button
+    $(document).on('change', '.check_out_date, .check_in_date', function() {    
+     var book_form = $(this).closest('form');
+    
+      if ( book_form.find('.check_out_date').val()!=""  && book_form.find('.check_in_date').val()!=""){
+         book_form.find('#submit_rates').removeClass('uk-disabled');
+      } else {
+        book_form.find('#submit_rates').addClass('uk-disabled');
+      }
+    
+    });
+    
+    //submit check rates button
+     $(document).on('click', '#submit_rates', function() {  
+      
+      
+      //what form      
+      var book_form = $(this).closest('form');
+      
+      //sum number of persons
+      var total_adults = 0;
+      var total_children = 0;
+      var number_of_rooms = 1;
+      var adults_per_room = '';
+      var children_per_room = '';
+      
+      
+      if ($('#number_of_rooms').data("value")>1){
+        number_of_rooms = $('#number_of_rooms').data("value"); 
+      }
+      
+      var room_ref = $(this).data("room-ref");  
+      
+      
+      var book_form_rooms = book_form.find('.per_room');
+      
+      book_form_rooms.each(function (i) { 
+        if (!$(this).hasClass('uk-hidden')){
+           //adults 
+           if ($(this).find('input.adults').data("value") > 0){
+            if (adults_per_room !=''){
+              adults_per_room +=',';
+            }        
+            adults_per_room += $(this).find('input.adults').data("value");
+            total_adults += $(this).find('input.adults').data("value");
+            
+            console.log(adults_per_room);
+            
+          }
+
+          //children
+          if (children_per_room !=''){
+              children_per_room +=',';
+          } 
+          if ($(this).find('input.children').data("value") > 0){
+            children_per_room += $(this).find('input.children').data("value");
+            total_children =  $(this).find('input.children').data("value");
+          }else {
+             children_per_room += 0;
+          }       
+          
+        }
+
+
+      });        
+      
+      //url params
+      var submit_url = 'https://be.synxis.com/?chain=24447&hotel=32505&Rooms=&nights=&adult=2&rooms=&SRC=30';
+      submit_url +='&locale='+lang;
+      submit_url +='&arrive=' + book_form.find('.check_in_date').val();
+      submit_url +='&depart=' + book_form.find('.check_out_date').val();
+      submit_url +='&rooms=' + number_of_rooms;
+      submit_url +='&adult=' + adults_per_room;
+      if (total_children > 0){
+        submit_url +='&child=' + children_per_room;
+      }      
+      if(typeof room_ref != 'undefined' && room_ref !=""){
+         submit_url +='&room=' + room_ref ;
+      }
+      
+      //console.log(submit_url);
+
+      window.open(submit_url,'_blank');      
+      
+     });
+     
+     
+    //scroll
+    $(window).on("scroll", function() {
+        var scroll = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        scrollHeight = $(document).height();
+        scrollPosition = $(window).height() + $(window).scrollTop();
+
+        
+        
+        //submenu
+        
+        if (submenu == 0 && scroll > endOfDocumentTop) {
+
+          $('#bsp_subnav').css('opacity',0);
+          submenu=1;
+
+        } else if(submenu == 1 && scroll <= endOfDocumentTop){
+          $('#bsp_subnav').css('opacity',1);
+          submenu=0;
+        }       
+        
+
+    });
+    
+    
+    $('#bounce_scroll_down').on("click", function (event){    
+        var jpanel = '.bsp-content-start';	        
+        var pos = $(jpanel).offset().top - menu_height ;				
+        $('html, body').animate({ scrollTop: pos }, 1000);
+    });     
+
+    
+    //menu dropdown   
+    $('.tm-header ul.uk-navbar-nav>li.uk-parent>a').each(function (i) {
+        if ($(this).hasClass('bsp-drop-default')) {
+            $(this).parent().addClass('bsp-drop-default');
+        }   
+        if ($(this).hasClass('bsp-drop-full')) {
+            $(this).parent().addClass('bsp-drop-full');
+        }  
+        if ($(this).hasClass('bsp-drop-right')) {
+            $(this).parent().addClass('bsp-drop-right');
+        }          
+          
+    });
+    
+    calc_drop_item_width();
+
+    $(".tm-header .uk-navbar li.uk-parent").hover(function(){
+       calc_drop_item_width();
+      
+    });
+        
+
+    
+  function calc_drop_item_width(){
+      //width of each dropdown li/image
+      var menu_width = $('.tm-header nav.uk-navbar').width();
+      var drop_item_width = (menu_width -110)/6;
+      
+      $('.tm-header ul.uk-navbar-dropdown-nav>li').each(function (i) {
+          $(this).width(drop_item_width);
+      });     
+      
+      $('.tm-header ul.uk-navbar-nav>li.uk-parent.bsp-drop-right').each(function (i) {
+           var drop_item_right = $(document).width() - ($(this).offset().left + $(this).outerWidth());
+           $(this).find('.uk-navbar-dropdown-dropbar').css('right', drop_item_right );
+           //console.log( $(this).find('a.menu-item').text() +': ' + drop_item_right);
+           var n = $(this).find('.uk-navbar-dropdown-nav>li').length;
+           drop_min_width = n*drop_item_width + 110;
+           $(this).find('.uk-navbar-dropdown').css('min-width',drop_min_width );
+      });
+      
+  }
+    
+  function bsp_init(){
+      current_width = window.outerWidth;
+      current_height = $(window).height(); 
+
+      
+      $('.tm-page').attr('id', 'tm-page');
+      
+
+    
+      
+      if ($(window).width()> break_menu_pos){
+          menu_height = $('.tm-header').height();        
+      } else {
+          menu_height = 0; 
+      } 
+      
+      
+      
+      // footer - small/large screen tuning
+      if ($(window).width()> break_menu_pos) {
+          $('#bsp-social .uk-grid').addClass('uk-flex-right');
+          $('#bsp-social .uk-grid').removeClass('uk-flex-center uk-padding');      
+          $('.bsp-footer .uk-subnav').removeClass('uk-flex-center');    
+          $('#boutique_footer_txt').removeClass('uk-text-center');  
+          $('#boutique_footer_txt').addClass('uk-text-right');
+          $('.land-box-container>div').eq(3).removeClass('uk-flex-first');       
+      } else {
+          $('#bsp-social .uk-grid').removeClass('uk-flex-right');
+          $('#bsp-social .uk-grid').addClass('uk-flex-center uk-padding');
+          $('.bsp-footer .uk-subnav').addClass('uk-flex-center');
+          $('#boutique_footer_txt').removeClass('uk-text-right');  
+          $('#boutique_footer_txt').addClass('uk-text-center');
+
+          $('.land-box-container>div').eq(3).addClass('uk-flex-first');
+
+        }    
+        
+      // landing page - small/large screen tuning  
+      if ($(window).width()> break_content_pos) {
+          $('.land-box-container.reverse>div:odd').removeClass('uk-flex-first');  
+          $('#land_main_slider a.mob-hide').css('pointer-events','initial');
+          $('#land_main_slider a.mob-hide').css('cursor','pointer');       
+          $('#land_main_slider a.mob-hide').unbind('click');
+          
+      }else{
+          $('.land-box-container.reverse>div:odd').addClass('uk-flex-first');  
+          $('#land_main_slider a.mob-hide').css('pointer-events','none');
+          $('#land_main_slider a.mob-hide').css('cursor','default');        
+          $('#land_main_slider a.mob-hide').bind('click', function(e){
+              e.preventDefault();
+          })
+      } 
+
+     //#estate_home_grid
+          setTimeout(function(){
+              var estate_grid_img_height = $('#estate_home_grid .el-item').eq(0).height();
+              $('#estate_grid_hotel').height(estate_grid_img_height);
+              $('#estate_grid_hotel .el-container').height(estate_grid_img_height);
+              $('#estate_grid_hotel').css('opacity','1');
+          }, 500);
+          
+
+     
+  }
+
+
+  function checkURL(url) {
+      return(url.match(/\.(jpeg|jpg|gif|png)$/) != null);
+  }
+  
+  function set_rooms_display(book_form, number_of_rooms) {
+        
+      var book_form_rooms = book_form.find('.per_room');
+      
+      book_form_rooms.each(function (i) { 
+          if ( i < number_of_rooms ){
+           $(this).removeClass('uk-hidden');
+          } else {
+           $(this).addClass('uk-hidden');
+          }         
+        }); 
+        
+        /**input of adults and children with one box  **/
+        /*
+        var current_persons =  $('.per_room').eq(0).find('input.adults').data("value") +  $('.per_room').eq(0).find('input.children').data("value");
+        console.log ('current_persons:'+current_persons);
+        var max_cap = 4 * number_of_rooms; 
+        if  (current_persons > max_cap){
+           //reset to start values
+            $('.per_room').eq(0).find('input.adults').data('value', 2);
+            $('.per_room').eq(0).find('input.adults').val(2 + ' ' + bsp_vars.adults_txt);
+            $('.per_room').eq(0).find('input.children').data('value', 0);
+            $('.per_room').eq(0).find('input.children').val(0 + ' ' + bsp_vars.children_txt);
+
+        }
+        */
+        $('.per_room').eq(0).find('.vc-plus').removeClass('uk-disabled');
+        $('.per_room').eq(0).find('.persons-warning').addClass('uk-hidden');
+            
+    
+  }
+
+  function get_person_name(value,type){
+    
+    var type_name ="";
+    
+    if (type=="A"){
+      if (value ==1 ){
+        type_name = bsp_vars.adult_txt;
+      }else{
+        type_name = bsp_vars.adults_txt;
+      }
+      
+    }
+    
+    if (type=="C"){
+      if (value == 1 ){
+        type_name = bsp_vars.child_txt;
+      }else{
+        type_name = bsp_vars.children_txt;
+      }      
+    }
+    if (type=="R"){
+      if (value == 1 ){
+        type_name = bsp_vars.room_txt;
+      }else{
+        type_name = bsp_vars.rooms_txt;
+      }      
+    }    
+    return type_name;
+    
+    
+  }
+ 
+});
+
+
+
+(function($){
+ 	$.fn.bgLoaded = function(custom) {
+
+ 		var self = this;
+
+	// Default plugin settings
+	var defaults = {
+		afterLoaded : function(){
+			this.addClass('loaded');
+		}
+	};
+
+		// Merge default and user settings
+		var settings = $.extend({}, defaults, custom);
+
+		// Loop through element
+		self.each(function(){
+			var $this = $(this),
+				bgImgs = $this.css('background-image').split(', ');
+        $this.data('loaded-count',0);
+
+
+			$.each( bgImgs, function(key, value){
+				var img = value.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+               // alert('img:' + img);
+				$('<img/>').attr('src', img).load(function() {
+					$(this).remove(); // prevent memory leaks
+					$this.data('loaded-count',$this.data('loaded-count')+1);
+					if ($this.data('loaded-count') >= bgImgs.length) {
+						settings.afterLoaded.call($this);
+					}
+				});
+			});
+
+		});
+	};
+})(jQuery);
+
+
+jQuery(function($) {
+  $('.widget_nav_menu > ul, .uk-parent > ul').attr('uk-nav','');
+  $(".uk-parent > a").append(' <span uk-nav-parent-icon></span>');
+});
